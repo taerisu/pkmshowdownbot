@@ -1,0 +1,16 @@
+{
+  "name": "pkmshowdownbot",
+  "version": "1.0.0",
+  "description": ":)",
+  "main": "index.js",
+  "scripts": {
+    "start": "pm2 start index.js",
+    "restart": "pm2 restart index.js",
+    "npm_install": "npm i"
+  },
+  "author": "Zamur",
+  "license": "ISC",
+  "dependencies": {
+    "discord.js": "^12.5.1"
+  }
+}
