@@ -22,11 +22,11 @@ client.on('message', async message => {
       .setThumbnail(client.user.displayAvatarURL({ dynamic: true }))
       .addFields(
         { name: `${prefix}help`, value: 'Выводит это сообщение', inline: true },
-        { name: `${prefix}pokedex или ${prefix}pokemon + (имя) или (id) покемона`, value: 'Узнать информацию о покемоне', inline: true }
+        { name: `${prefix}pokedex или ${prefix}pokemon + имя или id покемона / имя атаки / имя способности / имя предмета`, value: 'Узнать информацию о покемоне', inline: true }
       )
       .setFooter(`От ${client.users.cache.find(user => user.id === developerID).username + client.users.cache.find(user => user.id === developerID).discriminator}`, client.users.cache.find(user => user.id === developerID).displayAvatarURL({ dynamic: true }));
     message.channel.send(Embed);
-  }  else if (command === 'pokedex' || command === 'pokemon') {  
+  } else if (command === 'pokedex' || command === 'pokemon') {
     https.get('https://play.pokemonshowdown.com/data/pokedex.js?4076b733/', (json) => {
       let body = '';
 
@@ -36,8 +36,19 @@ client.on('message', async message => {
 
       json.on('end', () => {
         try {
-          eval(body)
-          response = exports.BattlePokedex[args.join('-').toLowerCase()];
+          eval(body);
+
+          let response;
+          if (parseInt(args[0]).toString() === args[0]) {
+            for (i in Object.keys(exports.BattlePokedex)) {
+              if (exports.BattlePokedex[Object.keys(exports.BattlePokedex)[i]].num.toString() === args[0]) {
+                response = exports.BattlePokedex[Object.keys(exports.BattlePokedex)[i]];
+                break;
+              }
+            }
+          } else {
+            response = exports.BattlePokedex[args.join('').split('-').join('').toLowerCase()];
+          }
 
           let type = '';
           let abilities = '';
@@ -61,7 +72,7 @@ client.on('message', async message => {
             .setColor(botColor)
             .setTitle(`Имя: ${response.name}, ID: ${response.num}`)
             .setDescription(`Тип: ${type}`)
-            .setThumbnail(`https://play.pokemonshowdown.com/sprites/ani/${args.join('-').toLowerCase()}.gif`)
+            .setThumbnail(`https://play.pokemonshowdown.com/sprites/ani/${response.name.replace('-Y', 'y').replace('-X', 'x').toLowerCase()}.gif`)
             .addFields(
               { name: 'Рост', value: response.heightm, inline: true },
               { name: 'Вес', value: response.weightkg, inline: true },
@@ -69,12 +80,12 @@ client.on('message', async message => {
               { name: 'HP', value: response.baseStats.hp, inline: true },
               { name: 'ATK', value: response.baseStats.atk, inline: true },
               { name: 'DEF', value: response.baseStats.def, inline: true },
-              { name: 'SPATK', value: response.baseStats.spa, inline: true  },
+              { name: 'SPATK', value: response.baseStats.spa, inline: true },
               { name: 'SPDEF', value: response.baseStats.spd, inline: true },
               { name: 'SPEED', value: response.baseStats.spe, inline: true },
               { name: 'Abilities', value: abilities, inline: true },
               { name: 'Egg groups', value: eggGroups, inline: true }
-          )
+            )
 
           if (response.prevo !== undefined) {
             Embed.addFields(
@@ -116,7 +127,14 @@ client.on('message', async message => {
             Embed.addFields(
               { name: 'Other formes', value: otherFormes, inline: true }
             )
+          } if (response.cannotDynamax === undefined) {
+            gmax = true
+          } else {
+            gmax = false
           }
+          Embed.addFields(
+            { name: 'Can G-MAX', value: gmax, inline: true }
+          )
           
           Embed.addFields(
             { name: 'Tier', value: response.tier, inline: true }
@@ -124,43 +142,87 @@ client.on('message', async message => {
 
           message.channel.send(Embed);
         } catch {
-          message.channel.send('Ошибка :no_entry_sign:');
+          https.get('https://play.pokemonshowdown.com/data/moves.js?2e0bee6d/', (json) => {
+            let body = '';
+
+            json.on('data', (chunk) => {
+              body += chunk;
+            });
+
+            json.on('end', () => {
+              try {
+                eval(body);
+
+                response = exports.BattleMovedex[args.join('').split('-').join('').toLowerCase()];
+
+                const Embed = new Discord.MessageEmbed()
+                  .setColor(botColor)
+                  .setTitle(`Имя: ${args.join(' ').split('-').join(' ').toLowerCase()}, ID: ${response.num}`)
+                  .setDescription(response.shortDesc)
+                  .addFields(
+                    { name: 'Тип', value: response.type, inline: true },
+                    { name: 'Вид', value: response.category, inline: true },
+                    { name: 'Урон', value: response.basePower, inline: true },
+                    { name: 'Точность', value: response.accuracy, inline: true },
+                    { name: 'PP', value: response.pp, inline: true },
+                    { name: 'Приоритет', value: response.priority, inline: true },
+                  )
+                message.channel.send(Embed);
+              } catch {
+                https.get('https://play.pokemonshowdown.com/data/abilities.js?a222a0d9/', (json) => {
+                  let body = '';
+
+                  json.on('data', (chunk) => {
+                    body += chunk;
+                  });
+
+                  json.on('end', () => {
+                    try {
+                      eval(body);
+
+                      response = exports.BattleAbilities[args.join('').split('-').join('').toLowerCase()];
+
+                      const Embed = new Discord.MessageEmbed()
+                        .setColor(botColor)
+                        .setTitle(`Имя: ${response.name}, ID: ${response.num}`)
+                        .setDescription(response.shortDesc)
+                      message.channel.send(Embed);
+                    } catch {
+                      https.get('https://play.pokemonshowdown.com/data/items.js?3b87d391/', (json) => {
+                        let body = '';
+
+                        json.on('data', (chunk) => {
+                          body += chunk;
+                        });
+
+                        json.on('end', () => {
+                          try {
+                            eval(body);
+                            response = exports.BattleItems[args.join('').split('-').join('').toLowerCase()];
+
+                            const Embed = new Discord.MessageEmbed()
+                              .setColor(botColor)
+                              .setTitle(`Имя: ${response.name}, ID: ${response.num}`)
+                              .setDescription(response.shortDesc)
+                              .addFields(
+                                { name: 'Урон для падения', value: response.fling.basePower, inline: true }
+                              )
+                            message.channel.send(Embed);
+                          } catch {
+                            message.channel.send('Ошибка :no_entry_sign:');
+                          }
+                        });
+                      });
+                    }
+                  });
+                });
+              }
+            });
+          });
         }
       });
-    });    
+    });
   }
-});
-
-client.on('guildMemberAdd', async member => {
-  const channel = member.guild.channels.cache.find(ch => ch.name === welcomeChannel);
-  if (!channel) return;
-
-  const canvas = Canvas.createCanvas(700, 250);
-  const ctx = canvas.getContext('2d');
-
-  const background = await Canvas.loadImage(backgroundWelcomeImageName);
-  ctx.drawImage(background, 0, 0, canvas.width, canvas.height);
-
-  ctx.strokeRect(0, 0, canvas.width, canvas.height);
-
-  ctx.font = '35px Arial';
-  ctx.fillStyle = '#ffffff';
-  ctx.fillText('Привет,', canvas.width / 2.5, canvas.height / 3.5);
-
-  ctx.fillStyle = '#ffffff';
-  ctx.fillText(`${member.displayName}!`, canvas.width / 2.5, canvas.height / 1.8);
-
-  ctx.beginPath();
-  ctx.arc(125, 125, 100, 0, Math.PI * 2, true);
-  ctx.closePath();
-  ctx.clip();
-
-  const avatar = await Canvas.loadImage(member.user.displayAvatarURL({ format: 'jpg' }));
-  ctx.drawImage(avatar, 25, 25, 200, 200);
-
-  const attachment = new Discord.MessageAttachment(canvas.toBuffer(), 'welcome-image.png');
-
-  channel.send(attachment);
 });
 
 client.once('reconnecting', () => {
